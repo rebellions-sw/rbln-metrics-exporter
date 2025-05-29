@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: rbln-metrics-exporter
+  namespace: kube-system
+  labels:
+    app.kubernetes.io/name: rbln-metrics-exporter
+    app.kubernetes.io/version: 0.1.2
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: rbln-metrics-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: rbln-metrics-exporter
+        app.kubernetes.io/version: 0.1.2
+    spec:
+      containers:
+        - name: metrics-exporter
+          image: rebellions/rbln-metrics-exporter:0.1.2
+          env:
+            - name: NODE_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: RBLN_METRICS_EXPORTER_RBLN_DAEMON_URL
+              value: "http://$(NODE_IP):50051"
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "40Mi"
+            limits:
+              cpu: "1"
+              memory: "200Mi"
+      terminationGracePeriodSeconds: 0
+      # Uncomment below if you've installed RBLN NPU Feature Discovery
+      # affinity:
+      #   nodeAffinity:
+      #     requiredDuringSchedulingIgnoredDuringExecution:
+      #       nodeSelectorTerms:
+      #         - matchExpressions:
+      #             - key: rebellions.ai/npu.present
+      #               operator: In
+      #               values:
+      #                 - "true"
+      # Uncomment below if you want to schedule on any tainted nodes
+      # tolerations:
+      #   - key: ""
+      #     operator: Exists
+      #     effect: NoSchedule
+      #   - key: ""
+      #     operator: Exists
+      #     effect: NoExecute
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rbln-metrics-exporter-svc
+  namespace: kube-system
+  annotations:
+    prometheus.io/scrape: "true"
+    prometheus.io/path: "/metrics"
+    prometheus.io/port: "9090"
+spec:
+  selector:
+    app.kubernetes.io/name: rbln-metrics-exporter
+  ports:
+    - port: 9090
