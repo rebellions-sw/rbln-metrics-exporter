@@ -29,6 +29,7 @@ func (cf *collectorFactory) NewCollectors() []Collector {
 		NewHardwareInfoCollector(cf.dClient, cf.isKubernetes, cf.podResourceMapper, cf.nodeName),
 		NewMemoryCollector(cf.dClient, cf.isKubernetes, cf.podResourceMapper, cf.nodeName),
 		NewUtilizationCollector(cf.dClient, cf.isKubernetes, cf.podResourceMapper, cf.nodeName),
+		NewDeviceHealthCollector(cf.dClient, cf.isKubernetes, cf.podResourceMapper, cf.nodeName),
 	}
 
 	for _, collector := range collectors {

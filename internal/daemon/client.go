@@ -77,6 +77,7 @@ type DeviceStatus struct {
 	DriverVersion   string
 	FirmwareVersion string
 	SMCVersion      string
+	DeviceStatus    int
 }
 
 func (c *Client) GetDeviceStatus(ctx context.Context) ([]DeviceStatus, error) {
@@ -91,6 +92,18 @@ func (c *Client) GetDeviceStatus(ctx context.Context) ([]DeviceStatus, error) {
 	for _, d := range devices {
 		if status, ok := c.buildDeviceStatus(ctx, d); ok {
 			statuses = append(statuses, status)
+		}
+	}
+	deviceinfos, err := c.getTotalDeviceInfo(ctx)
+	if err != nil {
+		slog.Warn("failed to get serviceable devices", "err", err)
+		return nil, fmt.Errorf("failed to get serviceable devices: %v", err)
+	}
+	for _, info := range deviceinfos {
+		for i, status := range statuses {
+			if status.UUID == info.GetUuid() {
+				statuses[i].DeviceStatus = int(info.GetErrStatus())
+			}
 		}
 	}
 
@@ -115,6 +128,26 @@ func (c *Client) getServiceableDevices(ctx context.Context) ([]*rblnservicespb.D
 		devices = append(devices, d)
 	}
 	return devices, nil
+}
+
+func (c *Client) getTotalDeviceInfo(ctx context.Context) ([]*rblnservicespb.DeviceInfo, error) {
+	stream, err := c.client.GetTotalInfo(ctx, &rblnservicespb.Empty{})
+	if err != nil {
+		return nil, fmt.Errorf("failed to GetTotalInfo RPC: %w", err)
+	}
+
+	var deviceinfos []*rblnservicespb.DeviceInfo
+	for {
+		d, err := stream.Recv()
+		if err != nil {
+			if errors.Is(err, io.EOF) {
+				break
+			}
+			return nil, fmt.Errorf("failed to receive device: %w", err)
+		}
+		deviceinfos = append(deviceinfos, d)
+	}
+	return deviceinfos, nil
 }
 
 func (c *Client) buildDeviceStatus(ctx context.Context, device *rblnservicespb.Device) (DeviceStatus, bool) {

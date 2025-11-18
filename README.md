@@ -34,3 +34,4 @@ The below metrics are exported for each NPU devices, labeled with device UUID, c
 |`RBLN_DEVICE_STATUS:DRAM_USED`|DRAM in use (GiB)|
 |`RBLN_DEVICE_STATUS:DRAM_TOTAL`|DRAM total (GiB)|
 |`RBLN_DEVICE_STATUS:UTILIZATION`|utilization (%)|
+|`RBLN_DEVICE_STATUS:HEALTH"`|NPU health status(0{ACTIVE}|1{INACTIVE})"|

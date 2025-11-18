@@ -2,10 +2,10 @@ apiVersion: apps/v1
 kind: DaemonSet
 metadata:
   name: rbln-metrics-exporter
-  namespace: kube-system
+  namespace: rbln-system
   labels:
     app.kubernetes.io/name: rbln-metrics-exporter
-    app.kubernetes.io/version: 0.1.2
+    app.kubernetes.io/version: latest
 spec:
   selector:
     matchLabels:
@@ -14,18 +14,43 @@ spec:
     metadata:
       labels:
         app.kubernetes.io/name: rbln-metrics-exporter
-        app.kubernetes.io/version: 0.1.2
+        app.kubernetes.io/version: latest
     spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: rebellions.ai/npu.deploy.metrics-exporter
+                    operator: In
+                    values:
+                      - "true"
       containers:
         - name: metrics-exporter
-          image: rebellions/rbln-metrics-exporter:0.1.2
+          image: rebellions/rbln-metrics-exporter:latest
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
+            readOnlyRootFilesystem: false
           env:
             - name: NODE_IP
               valueFrom:
                 fieldRef:
                   fieldPath: status.hostIP
+            - name: NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
             - name: RBLN_METRICS_EXPORTER_RBLN_DAEMON_URL
               value: "$(NODE_IP):50051"
+          volumeMounts:
+            - name: pod-resources
+              mountPath: /var/lib/kubelet/pod-resources
+              readOnly: true
+            - name: sysfs
+              mountPath: /sys
+              readOnly: true
           resources:
             requests:
               cpu: "250m"
@@ -33,6 +58,15 @@ spec:
             limits:
               cpu: "1"
               memory: "200Mi"
+      volumes:
+        - name: pod-resources
+          hostPath:
+            path: /var/lib/kubelet/pod-resources
+            type: Directory
+        - name: sysfs
+          hostPath:
+            path: /sys
+            type: Directory
       terminationGracePeriodSeconds: 0
       # Uncomment below if you've installed RBLN NPU Feature Discovery
       # affinity:
@@ -57,7 +91,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: rbln-metrics-exporter-svc
-  namespace: kube-system
+  namespace: rbln-system
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/path: "/metrics"
