@@ -46,6 +46,9 @@ func (d *DeviceHealthCollector) GetMetrics(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	d.healthStatus.Reset()
+
 	for _, s := range deviceStatus {
 		labels := prometheus.Labels{
 			"card":             s.Card,

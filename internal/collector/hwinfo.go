@@ -54,6 +54,10 @@ func (h *HardwareInfoCollector) GetMetrics(ctx context.Context) error {
 	if err != nil {
 		return err
 	}
+
+	h.temperature.Reset()
+	h.power.Reset()
+
 	for _, s := range deviceStatus {
 		labels := prometheus.Labels{
 			"card":             s.Card,
