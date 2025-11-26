@@ -47,6 +47,8 @@ func (u *UtilizationCollector) GetMetrics(ctx context.Context) error {
 		return err
 	}
 
+	u.utilization.Reset()
+
 	for _, s := range deviceStatus {
 		labels := prometheus.Labels{
 			"card":             s.Card,

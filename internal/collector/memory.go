@@ -55,6 +55,9 @@ func (m *MemoryCollector) GetMetrics(ctx context.Context) error {
 		return err
 	}
 
+	m.dramUsed.Reset()
+	m.dramTotal.Reset()
+
 	for _, s := range deviceStatus {
 		labels := prometheus.Labels{
 			"card":             s.Card,
